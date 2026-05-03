@@ -1,12 +1,14 @@
-﻿using UnityEngine;
+using System;
+using System.Linq;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using Zenject;
+using Random = UnityEngine.Random;
 
 public class PopupBootstrap : MonoBehaviour
 {
-    [Inject] private IPopupController _popupController;
-    
-    [SerializeField] private Sprite _sideImage;
+    [Inject] private ITaskPopupService _taskPopupService;
+
     [SerializeField] private ItemData[] _allItems;
 
     private void Start() => ShowTaskPopup().Forget();
@@ -20,17 +22,32 @@ public class PopupBootstrap : MonoBehaviour
     private async UniTaskVoid ShowTaskPopup()
     {
         await UniTask.Yield();
-        
+
+        var items = GetRandomItems();
+        if (items.Length != TaskPopupVM.ItemsCount) return;
+
         var vm = new TaskPopupVM(
             title: "Title",
-            someText: "Some text",
-            sideImage: _sideImage,
-            items: _allItems,
+            items: items,
             onConfirm: OnItemConfirmed
         );
 
-        var popup = _popupController.GetPopup<Popup.TaskPopup>();
-        await _popupController.ShowPopup(popup, vm);
+        await _taskPopupService.Show(vm);
+    }
+
+    private ItemData[] GetRandomItems()
+    {
+        var items = (_allItems ?? Array.Empty<ItemData>())
+            .Where(item => item != null)
+            .OrderBy(_ => Random.value)
+            .Take(TaskPopupVM.ItemsCount)
+            .ToArray();
+
+        if (items.Length == TaskPopupVM.ItemsCount)
+            return items;
+
+        Debug.LogError($"[PopupBootstrap] At least {TaskPopupVM.ItemsCount} items are required to show TaskPopup.");
+        return Array.Empty<ItemData>();
     }
 
     private void OnItemConfirmed(ItemData selected)

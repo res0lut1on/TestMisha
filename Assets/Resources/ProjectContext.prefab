@@ -106,3 +106,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 793a9d9753e14bb29e6a1862335a794f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _taskPopupPrefab: {fileID: 7425475662537317423, guid: da3ddeda90946714886a8d6f02d3b12b, type: 3}

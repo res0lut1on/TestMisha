@@ -10,11 +10,15 @@ public class PopupController : IPopupController
 
     private readonly List<Popup.Popup> _activePopups = new();
     private readonly Dictionary<Type, Popup.Popup> _registry = new();
-    private readonly Queue<(Popup.TaskPopup popup, TaskPopupVM vm)> _queue = new();
-    private bool _isShowing;
 
     public void RegisterPopup(Popup.Popup popup)
     {
+        if (popup == null)
+        {
+            Debug.LogError("[PopupController] Popup is null and cannot be registered.");
+            return;
+        }
+
         popup.Initialize(this);
         _registry[popup.GetType()] = popup;
     }
@@ -28,42 +32,6 @@ public class PopupController : IPopupController
         return null;
     }
 
-    public UniTask ShowPopup(Popup.TaskPopup popup, TaskPopupVM vm)
-    {
-        if (_isShowing)
-        {
-            _queue.Enqueue((popup, vm));
-            return UniTask.CompletedTask;
-        }
-
-        return ShowNext(popup, vm);
-    }
-
-    private async UniTask ShowNext(Popup.TaskPopup popup, TaskPopupVM vm)
-    {
-        _isShowing = true;
-        popup.Setup(vm);
-        await popup.Show();
-
-        var tcs = new UniTaskCompletionSource();
-        OnAllPopupClosed += OnClosed;
-
-        void OnClosed()
-        {
-            OnAllPopupClosed -= OnClosed;
-            tcs.TrySetResult();
-        }
-
-        await tcs.Task;
-        _isShowing = false;
-
-        if (_queue.Count > 0)
-        {
-            var next = _queue.Dequeue();
-            await ShowNext(next.popup, next.vm);
-        }
-    }
-
     public void AddActivePopup(Popup.Popup popup)
     {
         if (_activePopups.Contains(popup)) return;
@@ -73,7 +41,8 @@ public class PopupController : IPopupController
 
     public void RemoveActivePopup(Popup.Popup popup)
     {
-        _activePopups.Remove(popup);
+        if (!_activePopups.Remove(popup)) return;
+
         if (_activePopups.Count == 0)
             OnAllPopupClosed?.Invoke();
     }

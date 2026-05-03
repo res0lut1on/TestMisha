@@ -1,35 +1,30 @@
-﻿using System;
+using System;
 using System.Linq;
-using UnityEngine;
-using Random = UnityEngine.Random;
 
 public class TaskPopupVM
 {
+    public const int ItemsCount = 3;
+
     public string Title { get; }
-    public string SomeText { get; }
-    public Sprite SideImage { get; }
     public ItemData[] Items { get; }
     public Action<ItemData> OnConfirm { get; }
 
     public TaskPopupVM(
         string title,
-        string someText,
-        Sprite sideImage,
         ItemData[] items,
         Action<ItemData> onConfirm)
     {
-        if (items == null || items.Length < 3)
-            throw new ArgumentException("[TaskPopupVM] items must contain 3 items.");
-        
-        Title = title;
-        SomeText = someText;
-        SideImage = sideImage;
-        Items = items;
-        OnConfirm = onConfirm;
+        if (items == null || items.Length != ItemsCount)
+            throw new ArgumentException($"[TaskPopupVM] items must contain exactly {ItemsCount} items.");
 
-        Items = items
-            .OrderBy(_ => Random.value)
-            .Take(3)
-            .ToArray();
+        if (items.Any(item => item == null))
+            throw new ArgumentException("[TaskPopupVM] items cannot contain null values.");
+
+        if (items.Distinct().Count() != ItemsCount)
+            throw new ArgumentException("[TaskPopupVM] items must be different.");
+
+        Title = title ?? string.Empty;
+        Items = items.ToArray();
+        OnConfirm = onConfirm;
     }
 }
